@@ -6,13 +6,13 @@ A repertoire of stealth-oriented gateway server authenticators designed to minim
 
 ## Overview
 
-Internet -> Secret knock -> Server exposes itself temporarily -> Internal services
+> Internet -> Secret knock -> Server exposes itself temporarily -> Internal services
 
 The end goal is to be able to access a private server on the internet from anywhere while protecting it against bad actors.  Varying levels of stealth (invisibility) available.
 
 ## General Architecture
 
-Internet -> Gateway -> Auth layer -> Internal dashboard
+> Internet -> Gateway -> Auth layer -> Internal dashboard
 
 ### Gateway
 - Logs requests
@@ -26,7 +26,7 @@ Internal server, runs locally and never directly exposed to internet
 
 ## Usage
 
-==TEMPORARY==
+`TEMPORARY`
 
 Running the gateway
 ```
@@ -42,7 +42,7 @@ uvicorn main:app --host 127.0.0.1 --port 3000
 
 ## Testing
 
-==TEMPORARY==
+`TEMPORARY`
 
 In bash, to knock
 ```
