@@ -23,17 +23,19 @@ use std::{
     env,
 };
 
-const AUTH_DURATION_SECONDS: u64 = 60;
-
 #[derive(Clone)]
 struct AppState {
     authorized_ips: Arc<RwLock<HashMap<String, Instant>>>,
+    failed_ips: Arc<RwLock<HashMap<String, Instant>>>,
+    used_nonces: Arc<RwLock<HashMap<String, Instant>>>,
     config: EnvConfig,
 }
 
 #[derive(Deserialize)]
 struct KnockRequest {
     passphrase: String,
+    timestamp: u64,
+    nonce: String,
 }
 
 #[derive(Serialize)]
@@ -50,6 +52,7 @@ struct EnvConfig {
     server_port: u16,
 
     passphrase: String,
+    auth_dur: u16,
 }
 
 impl EnvConfig {
@@ -76,6 +79,11 @@ impl EnvConfig {
 
             passphrase: env::var("PASSPHRASE")
                 .expect("PASSPHRASE field missing"),
+
+            auth_dur: env::var("AUTH_DURATION_SECONDS")
+                .expect("AUTH_DURATION_SECONDS field missing")
+                .parse()
+                .expect("Invalid AUTH_DURATION_SECONDS field"),
         }
     }
 }
@@ -87,6 +95,7 @@ async fn main() {
 
     let state = AppState {
         authorized_ips: Arc::new(RwLock::new(HashMap::new())),
+        used_nonces: Arc::new(RwLock::new(HashMap::new())),
         config: config.clone(),
     };
 
@@ -130,7 +139,7 @@ async fn knock_handler(
     let client_ip = addr.ip().to_string();
 
     let expiry =
-    Instant::now() + Duration::from_secs(AUTH_DURATION_SECONDS);
+    Instant::now() + Duration::from_secs(state.config.auth_dur.into());
 
     state
     .authorized_ips
