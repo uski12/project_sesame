@@ -1,6 +1,6 @@
 # Changelog - Open Sesame!
 
-## Pre 05/06/26
+## Pre-05/06/26
 
 - Created the project
 - Buncha other stuff
@@ -16,3 +16,7 @@
 - Added more .env attributes
 - Added README.md, CHANGELOG.md and TODO.md
 
+
+## 06/06/26
+
+- Implemented maximum number of failed auth attempts before block

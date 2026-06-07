@@ -23,10 +23,16 @@ use std::{
     env,
 };
 
+struct FailedIpInfo {
+    attempts: u8,
+    blocked_until: Option<Instant>,
+}
+
+
 #[derive(Clone)]
 struct AppState {
     authorized_ips: Arc<RwLock<HashMap<String, Instant>>>,
-    failed_ips: Arc<RwLock<HashMap<String, Instant>>>,
+    failed_ips: Arc<RwLock<HashMap<String, FailedIpInfo>>>,
     used_nonces: Arc<RwLock<HashMap<String, Instant>>>,
     config: EnvConfig,
 }
@@ -95,6 +101,7 @@ async fn main() {
 
     let state = AppState {
         authorized_ips: Arc::new(RwLock::new(HashMap::new())),
+        failed_ips: Arc::new(RwLock::new(HashMap::new())),
         used_nonces: Arc::new(RwLock::new(HashMap::new())),
         config: config.clone(),
     };
