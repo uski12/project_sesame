@@ -201,7 +201,7 @@ async fn knock_handler(
             info.attempts += 1;
 
             if info.attempts >= state.config.max_failed_attempts {
-                info.blocked_expiry = Some(Instant::now() + Duration::from_secs(state.config.timeout_dur as u64 * info.attempts as u64));
+                info.blocked_expiry = Some(Instant::now() + Duration::from_secs(state.config.timeout_dur as u64 * (info.attempts - state.config.max_failed_attempts + 1) as u64));
             }
         }
 
@@ -283,7 +283,7 @@ async fn proxy_dashboard(
 
 async fn fake_failure() {
     let delay =
-    rand::thread_rng().gen_range(500..3000);
+    rand::thread_rng().gen_range(1000..5000);
 
     tokio::time::sleep(
         Duration::from_millis(delay)
