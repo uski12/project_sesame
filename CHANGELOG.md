@@ -1,5 +1,25 @@
 # Changelog - Open Sesame!
 
+
+## 09/06/26
+
+- Finished failed-attempt-blacklist
+- Converted all IP types from String to IpAddr type
+- Reset fails on successful knock
+- Cleanups implemented
+- Implemented debug traces (info!, warn!, error!, debug!) from tracing, tracing_subscriber
+
+
+## 06/06/26
+
+- Started working on maximum number of failed auth attempts before block
+
+## 05/06/26
+
+- Started work on nonces and HMAC (added failed_ip, nonce lists in AppState)
+- Added more .env attributes
+- Added README.md, CHANGELOG.md and TODO.md
+
 ## Pre-05/06/26
 
 - Created the project
@@ -9,22 +29,3 @@
 ### HTTPS-Gateway
 - Replaced mutexes with RwLocks
 - Added Axum request logger middleware
-
-## 05/06/26
-
-- Started work on nonces and HMAC (added failed_ip, nonce lists in AppState)
-- Added more .env attributes
-- Added README.md, CHANGELOG.md and TODO.md
-
-
-## 06/06/26
-
-- Started working on maximum number of failed auth attempts before block
-
-## 09/06/26
-
-- Finished failed-attempt-blacklist
-- Converted all IP types from String to IpAddr type
-- Reset fails on successful knock
-- Cleanups implemented
-- Implemented debug traces (info!, warn!, error!, debug!) from tracing, tracing_subscriber

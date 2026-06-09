@@ -1,5 +1,8 @@
 # TODO - Open Sesame!
 
+## Overall
+- [ ] Makefile (one command to run everything)
+
 ## Authentication & Gateway
 - [X] IP temp timeouts
 - [X] Reset failures on success
