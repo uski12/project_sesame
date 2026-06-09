@@ -9,7 +9,6 @@
 - Cleanups implemented
 - Implemented debug traces (info!, warn!, error!, debug!) from tracing, tracing_subscriber
 
-
 ## 06/06/26
 
 - Started working on maximum number of failed auth attempts before block
