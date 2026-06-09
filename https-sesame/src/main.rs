@@ -18,21 +18,30 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     net::SocketAddr,
+    net::IpAddr,
     sync::{Arc, RwLock},
     time::{Duration, Instant},
     env,
 };
 
+use tracing::{
+    info,
+    warn,
+    error,
+    debug,
+};
+
+#[derive(Debug, Default)]
 struct FailedIpInfo {
     attempts: u8,
-    blocked_until: Option<Instant>,
+    blocked_expiry: Option<Instant>,
 }
 
 
 #[derive(Clone)]
 struct AppState {
-    authorized_ips: Arc<RwLock<HashMap<String, Instant>>>,
-    failed_ips: Arc<RwLock<HashMap<String, FailedIpInfo>>>,
+    authorized_ips: Arc<RwLock<HashMap<IpAddr, Instant>>>,
+    failed_ips: Arc<RwLock<HashMap<IpAddr, FailedIpInfo>>>,
     used_nonces: Arc<RwLock<HashMap<String, Instant>>>,
     config: EnvConfig,
 }
@@ -40,8 +49,8 @@ struct AppState {
 #[derive(Deserialize)]
 struct KnockRequest {
     passphrase: String,
-    timestamp: u64,
-    nonce: String,
+    // timestamp: u64,
+    // nonce: String,
 }
 
 #[derive(Serialize)]
@@ -51,14 +60,17 @@ struct KnockResponse {
 
 #[derive(Clone)]
 struct EnvConfig {
-    gateway_host: String,
+    gateway_host: IpAddr,
     gateway_port: u16,
 
-    server_host: String,
+    server_host: IpAddr,
     server_port: u16,
 
     passphrase: String,
     auth_dur: u16,
+
+    max_failed_attempts: u8,
+    timeout_dur: u16,
 }
 
 impl EnvConfig {
@@ -68,20 +80,26 @@ impl EnvConfig {
 
         Self {
             gateway_host: env::var("GATEWAY_HOST")
-                .expect("GATEWAY_HOST field missing"),
+                .expect("GATEWAY_HOST field missing")
+                .parse()
+                .expect("Invalid GATEWAY_HOST field"),
 
             gateway_port: env::var("GATEWAY_PORT")
                 .expect("GATEWAY_PORT field missing")
                 .parse()
                 .expect("Invalid GATEWAY_PORT field"),
 
+
             server_host: env::var("SERVER_HOST")
-                .expect("SERVER_HOST field missing"),
+                .expect("SERVER_HOST field missing")
+                .parse()
+                .expect("Invalid SERVER_HOST field"),
 
             server_port: env::var("SERVER_PORT")
                 .expect("SERVER_PORT field missing")
                 .parse()
                 .expect("Invalid SERVER_PORT field"),
+
 
             passphrase: env::var("PASSPHRASE")
                 .expect("PASSPHRASE field missing"),
@@ -90,6 +108,17 @@ impl EnvConfig {
                 .expect("AUTH_DURATION_SECONDS field missing")
                 .parse()
                 .expect("Invalid AUTH_DURATION_SECONDS field"),
+
+
+            max_failed_attempts: env::var("MAX_FAILED_ATTEMPTS")
+                .expect("MAX_FAILED_ATTEMPTS field missing")
+                .parse()
+                .expect("Invalid MAX_FAILED_ATTEMPTS field"),
+
+            timeout_dur: env::var("TIMEOUT_DURATION_SECONDS")
+                .expect("TIMEOUT_DURATION_SECONDS field missing")
+                .parse()
+                .expect("Invalid TIMEOUT_DURATION_SECONDS field"),
         }
     }
 }
@@ -97,7 +126,11 @@ impl EnvConfig {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
+
     let config = EnvConfig::load_env();
+
+    info!("Starting server...");
 
     let state = AppState {
         authorized_ips: Arc::new(RwLock::new(HashMap::new())),
@@ -109,14 +142,15 @@ async fn main() {
     let app = Router::new()
     .route("/knock", post(knock_handler))
     .route("/dashboard", get(proxy_dashboard))
-    .layer(middleware::from_fn(req_logger))
+    .layer(middleware::from_fn_with_state(state.clone(), req_logger))
     .with_state(state);
+
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.gateway_host, config.gateway_port))
     .await
     .unwrap();
 
-    println!("Gateway listening on :{}", config.gateway_port);
+    info!("Gateway listening on PORT: {}", config.gateway_port);
 
     axum::serve(
         listener,
@@ -132,7 +166,45 @@ async fn knock_handler(
     Json(payload): Json<KnockRequest>
 ) -> impl IntoResponse {
 
+    let client_ip = addr.ip();
+
+    {
+        let mut map = state.failed_ips.write().unwrap();
+
+        let info = map
+        .entry(client_ip)
+        .or_default();
+
+        if let Some(expiry) = info.blocked_expiry {
+            if Instant::now() < expiry {
+                warn!("Blocked request! IP: {}", client_ip);
+                return (
+                    StatusCode::NOT_FOUND,
+                    Json(KnockResponse {
+                        status: "not found".into(),
+                    }),
+                );
+            }
+        }
+    }
+
+
     if payload.passphrase != state.config.passphrase {
+        warn!("Failed knock! IP: {}, attempt: {}", client_ip, state.failed_ips.read().unwrap().get(&addr.ip()).map(|v| v.attempts).unwrap_or(0),);
+        {
+            let mut map = state.failed_ips.write().unwrap();
+
+            let info = map
+            .entry(client_ip)
+            .or_default();
+
+            info.attempts += 1;
+
+            if info.attempts >= state.config.max_failed_attempts {
+                info.blocked_expiry = Some(Instant::now() + Duration::from_secs(state.config.timeout_dur as u64 * info.attempts as u64));
+            }
+        }
+
         fake_failure().await;
 
         return (
@@ -143,24 +215,26 @@ async fn knock_handler(
         );
     }
 
-    let client_ip = addr.ip().to_string();
+    state
+    .failed_ips.write()
+    .unwrap()
+    .remove(&client_ip);
 
-    let expiry =
-    Instant::now() + Duration::from_secs(state.config.auth_dur.into());
+    let auth_expiry = Instant::now() + Duration::from_secs(state.config.auth_dur.into());
 
     state
     .authorized_ips
     .write()
     .unwrap()
-    .insert(client_ip.clone(), expiry);
+    .insert(client_ip, auth_expiry);
 
-    println!("Authorized {}", client_ip);
+    info!("Authorized {}", client_ip);
 
     (
         StatusCode::OK,
-     Json(KnockResponse {
-         status: "authorized".into(),
-     }),
+        Json(KnockResponse {
+            status: "Authorized".into(),
+        }),
     )
 }
 
@@ -169,7 +243,7 @@ async fn proxy_dashboard(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> Response {
 
-    let client_ip = addr.ip().to_string();
+    let client_ip = addr.ip();
 
     let authorized = {
         let map = state.authorized_ips.read().unwrap();
@@ -182,6 +256,7 @@ async fn proxy_dashboard(
     };
 
     if !authorized {
+        warn!("Unauthorised service request! IP: {}", client_ip);
         fake_failure().await;
 
         return StatusCode::BAD_GATEWAY.into_response();
@@ -200,6 +275,7 @@ async fn proxy_dashboard(
         }
 
         Err(_) => {
+            error!("Internal server not found!");
             StatusCode::BAD_GATEWAY.into_response()
         }
     }
@@ -221,19 +297,14 @@ async fn req_logger(
     next: Next,
 ) -> Response {
 
-    println!("==========================");
-    println!("IP        : {}", addr.ip());
-    println!("PORT      : {}", addr.port());
-    println!("METHOD    : {}", request.method());
-    println!("URI       : {}", request.uri());
-    println!("VERSION   : {:?}", request.version());
+    info!(
+        ip = %addr.ip(),
+        method = %request.method(),
+        uri = %request.uri(),
+        "Request received: "
+    );
 
-    println!("HEADERS:");
-    for (key, value) in request.headers() {
-        println!("  {}: {:?}", key, value);
-    }
-
-    println!("==========================");
+    debug!(headers= ?request.headers());
 
     next.run(request).await
 }

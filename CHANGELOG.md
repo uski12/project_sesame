@@ -19,4 +19,12 @@
 
 ## 06/06/26
 
-- Implemented maximum number of failed auth attempts before block
+- Started working on maximum number of failed auth attempts before block
+
+## 09/06/26
+
+- Finished failed-attempt-blacklist
+- Converted all IP types from String to IpAddr type
+- Reset fails on successful knock
+- Cleanups implemented
+- Implemented debug traces (info!, warn!, error!, debug!) from tracing, tracing_subscriber
