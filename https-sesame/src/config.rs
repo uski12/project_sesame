@@ -19,6 +19,8 @@ pub struct EnvConfig {
     pub passphrase: String,
     pub auth_dur: u16,
 
+    pub max_time_drift: u16,
+
     pub max_failed_attempts: u8,
     pub timeout_dur: u16,
 }

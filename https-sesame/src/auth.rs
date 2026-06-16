@@ -6,7 +6,7 @@ use axum::{
 };
 use std::{
     net::SocketAddr,
-    time::{Duration, Instant}
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH}
 };
 use rand::Rng;
 use tracing::{
@@ -28,10 +28,23 @@ pub async fn knock_handler(
 
     {
         let mut map = state.failed_ips.write().unwrap();
+        let mut used_nonces = state.used_nonces.write().unwrap();
 
         let info = map
         .entry(client_ip)
         .or_default();
+
+        if used_nonces.contains_key(&payload.nonce) {
+            warn!("Reused nonce! IP: {}", client_ip);
+            return (
+                StatusCode::NOT_FOUND,
+                Json(KnockResponse {
+                    status: "not found".into(),
+                })
+            );
+        } else {
+            used_nonces.insert(payload.nonce.clone(), Instant::now());
+        }
 
         if let Some(expiry) = info.blocked_expiry {
             if Instant::now() < expiry {

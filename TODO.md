@@ -6,8 +6,9 @@
 ## Authentication & Gateway
 - [X] IP temp timeouts
 - [X] Reset failures on success
+- [ ] Convert to HTTPS
 - [ ] Timestamp validation 
-- [ ] Nonce replay signatures
+- [X] Nonce replay signatures
 - [ ] HMAC implementation
 
 - [ ] Cleanup for IPs and Nonces

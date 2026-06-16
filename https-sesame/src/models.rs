@@ -11,8 +11,8 @@ pub struct FailedIpInfo {
 #[derive(Deserialize)]
 pub struct KnockRequest {
     pub passphrase: String,
-    // timestamp: u64,
-    // nonce: String,
+    pub timestamp: u64,
+    pub nonce: String,
 }
 
 #[derive(Serialize)]

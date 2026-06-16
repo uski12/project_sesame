@@ -1,5 +1,10 @@
 # Changelog - Open Sesame!
 
+## 16/06/25
+- Added Nonces (replay protection)
+- Implementing timestamp signatures & verification
+
+
 
 ## 09/06/26
 
