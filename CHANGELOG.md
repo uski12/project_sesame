@@ -2,8 +2,8 @@
 
 ## 16/06/25
 - Added Nonces (replay protection)
-- Implementing timestamp signatures & verification
-
+- Started work on timestamp signatures & verification
+- Setup DuckDNS for personal domain, need to do router port forwarding
 
 
 ## 09/06/26

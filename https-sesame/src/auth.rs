@@ -34,6 +34,16 @@ pub async fn knock_handler(
         .entry(client_ip)
         .or_default();
 
+        if SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs().abs_diff(payload.timestamp) > state.config.max_time_drift.into() {
+            warn!("Invalid timestamp! IP = {}", client_ip);
+            return (
+                StatusCode::NOT_FOUND,
+                Json(KnockResponse {
+                    status: "not found".into(),
+                })
+            );
+        }
+
         if used_nonces.contains_key(&payload.nonce) {
             warn!("Reused nonce! IP: {}", client_ip);
             return (

@@ -62,6 +62,12 @@ impl EnvConfig {
             .expect("Invalid AUTH_DURATION_SECONDS field"),
 
 
+            max_time_drift: env::var("MAX_TIME_DRIFT")
+            .expect("MAX_TIME_DRIFT field missing")
+            .parse()
+            .expect("Invalid MAX_TIME_DRIFT field"),
+
+
             max_failed_attempts: env::var("MAX_FAILED_ATTEMPTS")
             .expect("MAX_FAILED_ATTEMPTS field missing")
             .parse()
