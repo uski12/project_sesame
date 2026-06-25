@@ -6,11 +6,15 @@
 ## Authentication & Gateway
 - [X] IP temp timeouts
 - [X] Reset failures on success
-- [ ] Convert to HTTPS
-- [ ] Timestamp validation 
+- [X] Convert from IPv4 to IPv6
+- [X] Convert from HTTP to HTTPS - woohoo! Major PITA to do
 - [X] Nonce replay signatures
-- [ ] HMAC implementation
+- [X] Timestamp validation 
 
+- [ ] FIX IP in gateway logs - shows 127.0.0.1 only due to reverse proxying
+- [ ] Output logs to logfile
+- [ ] Refactor & cleanup auth.rs code
+- [ ] HMAC implementation?
 - [ ] Cleanup for IPs and Nonces
 - [ ] Rate limiting
 

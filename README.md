@@ -48,16 +48,31 @@ In bash, to knock
 ```
 curl -X POST http://localhost:8009/knock -H "Content-Type: application/json" -d "{\"passphrase\":\"test123\",\"nonce\":\"hi\",\"timestamp\":$(date +%s)}"
 ```
+With caddy reverse proxying and DuckDNS,
+```
+curl -X POST https://domain.duckdns.org/knock -H 'Content-Type: application/json' -d "{\"passphrase\":\"test123\", \"nonce\": \"test\", \"timestamp\":$(date +%s)}"
+```
+
+
+
+In Windows Powershell,
+```
+curl.exe -X POST http://localhost:8009/knock -H "Content-Type: application/json" -d "{\"passphrase\":\"test123\",\"nonce\":\"hi\",\"timestamp\":$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())}"
+```
 
 And to access the internal dashboard
 ```
 curl -v http://localhost:8009/dashboard
 ```
 
+
+Converting to HTTPS:
+```
+SEE hosting/HOSTING.md for more information
+```
+
+
 TO BE UPDATED
-
-
-
 
 
 

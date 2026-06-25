@@ -16,9 +16,9 @@ pub async fn req_logger(
 
     info!(
         ip = %addr.ip(),
-          method = %request.method(),
-          uri = %request.uri(),
-          "Request received: "
+        method = %request.method(),
+        uri = %request.uri(),
+        "Request received: "
     );
 
     debug!(headers= ?request.headers());

@@ -1,2 +1,11 @@
-#!/usr/bin/env bash
-echo url="https://www.duckdns.org/update?domains=YOUR_DOMAIN&token=YOUR_TOKEN&ip=" | curl -k -o ~/duckdns/duck.log -K -
+#!/bin/bash
+
+DOMAIN="yourdomain"
+TOKEN="your-token"
+LOG="/var/log/duckdns.log"
+IP="" # Leave empty for auto-detect
+IPV6= "" # Optional IPv6 setting - AUTO-DETECT WON'T WORK FOR IPv6!
+
+echo -e "\n$(date): " >> "$LOG"
+curl -fsS "https://www.duckdns.org/update?domains=${DOMAIN}&token=${TOKEN}&ip=${IP}&ipv6=${IPV6}&verbose=true" >> "$LOG" 2>&1
+

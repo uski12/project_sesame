@@ -1,10 +1,16 @@
 # Changelog - Open Sesame!
 
+## 25/06/25
+
+- Added information for DuckDNS DDNS hosting - hosting/HOSTING.md
+- Changed from using IPv4 to IPv6 - see hosting/HOSTING.md for why
+- Upgraded from HTTP to HTTPS. Check hosting/HOSTING.md for more info
+- Configured internal server firewall
+
 ## 16/06/25
 - Added Nonces (replay protection)
 - Started work on timestamp signatures & verification
 - Setup DuckDNS for personal domain, need to do router port forwarding
-
 
 ## 09/06/26
 
