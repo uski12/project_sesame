@@ -23,13 +23,15 @@ use config::EnvConfig;
 use state::AppState;
 use auth::knock_handler;
 use proxy::proxy_dashboard;
-use logging::req_logger;
+use logging::{req_logger};
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
-
     let config = EnvConfig::load_env();
+
+    logging::init();
+
+
 
     info!("Starting server...");
 
@@ -51,7 +53,7 @@ async fn main() {
     .await
     .unwrap();
 
-    info!("Gateway listening on PORT: {}", config.gateway_port);
+    info!("Gateway listening on {}:{}", config.gateway_host, config.gateway_port);
 
     axum::serve(
         listener,

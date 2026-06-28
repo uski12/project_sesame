@@ -1,5 +1,11 @@
 # Changelog - Open Sesame!
 
+## 28/06/25
+
+- Fixed IP in gateway logs showing as loopback only
+- Cleaned up auth.rs
+- All console logs now persist under https-sesame/logs/
+
 ## 25/06/25
 
 - Added information for DuckDNS DDNS hosting - hosting/HOSTING.md

@@ -1,5 +1,8 @@
 use std::time::Instant;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    // Serialize
+};
 
 
 #[derive(Debug, Default)]
@@ -15,7 +18,7 @@ pub struct KnockRequest {
     pub nonce: String,
 }
 
-#[derive(Serialize)]
-pub struct KnockResponse {
-    pub status: String,
-}
+// #[derive(Serialize)]
+// pub struct KnockResponse {
+//     pub status: String,
+// }

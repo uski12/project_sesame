@@ -10,10 +10,11 @@
 - [X] Convert from HTTP to HTTPS - woohoo! Major PITA to do
 - [X] Nonce replay signatures
 - [X] Timestamp validation 
+- [X] FIX IP in gateway logs - shows 127.0.0.1 only due to reverse proxying
+- [X] Output logs to logfile
+- [X] Refactor & cleanup auth.rs code
 
-- [ ] FIX IP in gateway logs - shows 127.0.0.1 only due to reverse proxying
-- [ ] Output logs to logfile
-- [ ] Refactor & cleanup auth.rs code
+- [ ] Add blocked IPs to firewall blacklist
 - [ ] HMAC implementation?
 - [ ] Cleanup for IPs and Nonces
 - [ ] Rate limiting

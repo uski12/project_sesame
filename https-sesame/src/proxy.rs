@@ -1,6 +1,6 @@
 use axum::{
     extract::{ConnectInfo, State},
-    http::StatusCode,
+    http::{StatusCode, HeaderMap},
     response::{IntoResponse, Response},
 };
 use std::{
@@ -14,14 +14,16 @@ use tracing::{
 
 use crate::state::AppState;
 use crate::auth::fake_failure;
+use crate::logging::get_client_ip;
 
 
 pub async fn proxy_dashboard(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
 ) -> Response {
 
-    let client_ip = addr.ip();
+    let client_ip = get_client_ip(addr, &headers);
 
     let authorized = {
         let map = state.authorized_ips.read().unwrap();

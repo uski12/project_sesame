@@ -1,6 +1,6 @@
 use axum::{
     extract::{ConnectInfo, State},
-    http::StatusCode,
+    http::{StatusCode, HeaderMap},
     response::IntoResponse,
     Json,
 };
@@ -14,17 +14,21 @@ use tracing::{
     warn,
 };
 
-use crate::models::{KnockRequest, KnockResponse};
+use crate::models::KnockRequest;
 use crate::state::AppState;
+use crate::logging::get_client_ip;
+
 
 
 pub async fn knock_handler(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Json(payload): Json<KnockRequest>
-) -> impl IntoResponse {
-
-    let client_ip = addr.ip();
+) -> impl IntoResponse
+{
+    let client_ip = get_client_ip(addr, &headers);
+    let mut invalid = 0;
 
     {
         let mut map = state.failed_ips.write().unwrap();
@@ -34,47 +38,32 @@ pub async fn knock_handler(
         .entry(client_ip)
         .or_default();
 
+        if let Some(expiry) = info.blocked_expiry {
+            if Instant::now() < expiry {
+                warn!("Blocked request! IP: {}", client_ip);
+                invalid += 1;
+                // add firewall rule here.
+            }
+        }
         if SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs().abs_diff(payload.timestamp) > state.config.max_time_drift.into() {
             warn!("Invalid timestamp! IP = {}", client_ip);
-            // fake_failure().await;
-            return (
-                StatusCode::NOT_FOUND,
-                Json(KnockResponse {
-                    status: "not found".into(),
-                })
-            );
+            invalid += 1;
         }
 
         if used_nonces.contains_key(&payload.nonce) {
             warn!("Reused nonce! IP: {}", client_ip);
-            // fake_failure().await;
-            return (
-                StatusCode::NOT_FOUND,
-                Json(KnockResponse {
-                    status: "not found".into(),
-                })
-            );
+            invalid += 1;
         } else {
             used_nonces.insert(payload.nonce.clone(), Instant::now());
         }
 
-        if let Some(expiry) = info.blocked_expiry {
-            if Instant::now() < expiry {
-                warn!("Blocked request! IP: {}", client_ip);
-                // fake_failure().await;
-                return (
-                    StatusCode::NOT_FOUND,
-                    Json(KnockResponse {
-                        status: "not found".into(),
-                    }),
-                );
-            }
-        }
     }
 
-
     if payload.passphrase != state.config.passphrase {
-        warn!("Failed knock! IP: {}, attempt: {}", client_ip, state.failed_ips.read().unwrap().get(&addr.ip()).map(|v| v.attempts).unwrap_or(0),);
+        warn!("Wrong password! IP: {}", client_ip);
+        invalid += 1;
+    }
+    if invalid > 0{
         {
             let mut map = state.failed_ips.write().unwrap();
 
@@ -84,6 +73,8 @@ pub async fn knock_handler(
 
             info.attempts += 1;
 
+            warn!("Attempts from {} = {}", client_ip, info.attempts);
+
             if info.attempts >= state.config.max_failed_attempts {
                 info.blocked_expiry = Some(Instant::now() + Duration::from_secs(state.config.timeout_dur as u64 * (info.attempts - state.config.max_failed_attempts + 1) as u64));
             }
@@ -91,12 +82,7 @@ pub async fn knock_handler(
 
         fake_failure().await;
 
-        return (
-            StatusCode::NOT_FOUND,
-            Json(KnockResponse {
-                status: "not found".into(),
-            }),
-        );
+        return StatusCode::NOT_FOUND;
     }
 
     state
@@ -114,12 +100,7 @@ pub async fn knock_handler(
 
     info!("Authorized {}", client_ip);
 
-    (
-        StatusCode::OK,
-     Json(KnockResponse {
-         status: "Authorized".into(),
-     }),
-    )
+    StatusCode::OK
 }
 
 pub async fn fake_failure() {
