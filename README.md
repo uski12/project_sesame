@@ -57,7 +57,15 @@ curl -X POST https://domain.duckdns.org/knock -H 'Content-Type: application/json
 
 In Windows Powershell,
 ```
-curl.exe -X POST http://localhost:8009/knock -H "Content-Type: application/json" -d "{\"passphrase\":\"test123\",\"nonce\":\"hi\",\"timestamp\":$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())}"
+$body = [ordered]@{
+    passphrase = "test123"
+    nonce = "hi"
+    timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+} | ConvertTo-Json -Compress
+
+$body | Set-Content body.json -NoNewline
+
+curl.exe -v -H "Content-Type: application/json" --data-binary "@body.json" http://localhost:8009/knock
 ```
 
 And to access the internal dashboard
