@@ -82,7 +82,7 @@ pub async fn knock_handler(
 
         fake_failure().await;
 
-        return StatusCode::NOT_FOUND;
+        return StatusCode::REQUEST_TIMEOUT;
     }
 
     state
@@ -100,8 +100,35 @@ pub async fn knock_handler(
 
     info!("Authorized {}", client_ip);
 
-    StatusCode::OK
+    fake_failure().await;
+
+    StatusCode::GATEWAY_TIMEOUT
 }
+
+pub async fn authorise(
+    State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap
+) -> StatusCode {
+
+    let client_ip = get_client_ip(addr, &headers);
+
+    let authorized = state
+        .authorized_ips
+        .read()
+        .unwrap()
+        .get(&client_ip)
+        .is_some_and(|expiry| *expiry > Instant::now());
+
+    if authorized {
+        StatusCode::OK
+    } else {
+        warn!("Unauthorized request! IP: {}", client_ip);
+        StatusCode::NOT_FOUND
+    }
+}
+
+
 
 pub async fn fake_failure() {
     let delay =

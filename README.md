@@ -46,7 +46,7 @@ uvicorn main:app --host 127.0.0.1 --port 3000
 
 In bash, to knock
 ```
-curl -X POST http://localhost:8009/knock -H "Content-Type: application/json" -d "{\"passphrase\":\"test123\",\"nonce\":\"hi\",\"timestamp\":$(date +%s)}"
+curl -X POST http://localhost:8080/knock -H "Content-Type: application/json" -d "{\"passphrase\":\"test123\",\"nonce\":\"$(uuidgen)\",\"timestamp\":$(date +%s)}"
 ```
 With caddy reverse proxying and DuckDNS,
 ```

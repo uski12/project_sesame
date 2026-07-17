@@ -2,7 +2,7 @@ mod config;
 mod state;
 mod models;
 mod auth;
-mod proxy;
+// mod proxy;
 mod logging;
 
 use axum::{
@@ -21,8 +21,8 @@ use tracing::info;
 
 use config::EnvConfig;
 use state::AppState;
-use auth::knock_handler;
-use proxy::proxy_dashboard;
+use auth::{knock_handler, authorise};
+// use proxy::proxy_dashboard;
 use logging::{req_logger};
 
 #[tokio::main]
@@ -44,7 +44,7 @@ async fn main() {
 
     let app = Router::new()
     .route("/knock", post(knock_handler))
-    .route("/dashboard", get(proxy_dashboard))
+    .route("/authorise", get(authorise))
     .layer(middleware::from_fn_with_state(state.clone(), req_logger))
     .with_state(state);
 

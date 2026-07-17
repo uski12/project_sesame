@@ -14,14 +14,18 @@
 - [X] Output logs to logfile
 - [X] Refactor & cleanup auth.rs code
 
+- [ ] Store & load used IPs, nonces, etc. in plaintext for persistence
+- [ ] Cleanup for IPs and Nonces
+
 - [ ] Add blocked IPs to firewall blacklist
 - [ ] HMAC implementation?
-- [ ] Cleanup for IPs and Nonces
 - [ ] Rate limiting
 
 ## Dashboard
 - [ ] Impressive dashboard - expand upon later
 
-## Future
+## Future Ideas
 - [ ] UDP SPA (client and server required)
 - [ ] SYN packet modification
+- [ ] Discord bot integration (notifications)
+- [ ] OTP auth

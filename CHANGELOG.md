@@ -1,19 +1,25 @@
 # Changelog - Open Sesame!
 
-## 28/06/25
+## 17/07/26
+
+- Use caddy forward auth
+- proxy.rs deprecated
+- deprecated server host and port env variables
+
+## 28/06/26
 
 - Fixed IP in gateway logs showing as loopback only
 - Cleaned up auth.rs
 - All console logs now persist under https-sesame/logs/
 
-## 25/06/25
+## 25/06/26
 
 - Added information for DuckDNS DDNS hosting - hosting/HOSTING.md
 - Changed from using IPv4 to IPv6 - see hosting/HOSTING.md for why
 - Upgraded from HTTP to HTTPS. Check hosting/HOSTING.md for more info
 - Configured internal server firewall
 
-## 16/06/25
+## 16/06/26
 - Added Nonces (replay protection)
 - Started work on timestamp signatures & verification
 - Setup DuckDNS for personal domain, need to do router port forwarding

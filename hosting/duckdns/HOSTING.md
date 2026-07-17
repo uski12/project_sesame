@@ -14,7 +14,7 @@ But, for DuckDNS, you must modify your caddy binary file to include the DuckDNS 
 For more information, please search up xcaddy and building it with the DuckDNS plugin.
 
 
-Copy-paste instructions below:
+Copy-paste given instructions below:
 ```
 go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 
@@ -44,8 +44,18 @@ your-domain.duckdns.org {
 	tls {
 		dns duckdns {DUCKDNS_TOKEN}
 	}
+	
+	handle /knock {
+		reverse_proxy 127.0.0.1:8009
+	}
 
-	reverse_proxy 127.0.0.1:8009
+	handle {
+		forward_auth 127.0.0.1:8009 {
+			uri /authorise
+		}
+
+		reverse_proxy 127.0.0.1:3000
+	}
 }
 ```
 
