@@ -6,6 +6,7 @@
 - Plugged a security bug when passing wrong header to the knock service
 - Added database integration (needs testing)
 - Better separation of concerns
+- New dashboard (AI generated mostly, will change later)
 
 
 ## 17/07/26

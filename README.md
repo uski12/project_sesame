@@ -1,7 +1,6 @@
-# Open Sesame!
-> Utter the magic phrase and open the cave anywhere!
-
-A repertoire of stealth-oriented gateway server authenticators designed to minimise exposure of internal services to the public internet.
+<p align="center"><img src="https://github.com/user-attachments/assets/8c186907-8fad-4da5-9f5e-559e3572148b" alt="Logo"> </p>
+<h3 align="center"> Open Sesame! </h3>
+<p align="center"><sub><em>Utter the magic phrase and open the cave anywhere!</em></sub></p>
 
 
 ## Overview
@@ -50,7 +49,7 @@ curl -X POST http://localhost:8080/knock -H "Content-Type: application/json" -d 
 ```
 With caddy reverse proxying and DuckDNS,
 ```
-curl -X POST https://domain.duckdns.org/knock -H 'Content-Type: application/json' -d "{\"passphrase\":\"test123\", \"nonce\": \"test\", \"timestamp\":$(date +%s)}"
+curl -X POST https://domain.duckdns.org/knock -H 'Content-Type: application/json' -d "{\"passphrase\":\"test123\", \"nonce\": \"$(uuidgen)\", \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
 ```
 
 
