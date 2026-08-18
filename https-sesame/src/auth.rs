@@ -1,13 +1,15 @@
 use axum::{
-    extract::{ConnectInfo, State},
+    extract::{ConnectInfo, State, rejection::JsonRejection},
     http::{StatusCode, HeaderMap},
     response::IntoResponse,
     Json,
 };
 use std::{
     net::SocketAddr,
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH}
+    time::{Duration},
 };
+
+use chrono::{Duration as ChronoDuration, Utc};
 use rand::Rng;
 use tracing::{
     info,
@@ -15,7 +17,7 @@ use tracing::{
 };
 
 use crate::models::KnockRequest;
-use crate::state::AppState;
+use crate::models::AppState;
 use crate::logging::get_client_ip;
 
 
@@ -24,12 +26,38 @@ pub async fn knock_handler(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
-    Json(payload): Json<KnockRequest>
+    payload: Result<Json<KnockRequest>, JsonRejection>
 ) -> impl IntoResponse
 {
     let client_ip = get_client_ip(addr, &headers);
-    let mut invalid = 0;
 
+    let Json(payload) = match payload {
+        Ok(payload) => payload,
+        Err(_) => {
+            {
+                let mut map = state.failed_ips.write().unwrap();
+
+                let info = map
+                .entry(client_ip)
+                .or_default();
+
+                info.attempts += 1;
+
+                warn!("Invalid knock payload! IP: {}, attempts: {}", client_ip, info.attempts);
+
+                if info.attempts >= state.config.max_failed_attempts {
+                    info.blocked_expiry = Some(Utc::now() + ChronoDuration::seconds(state.config.timeout_dur as i64 * (info.attempts - state.config.max_failed_attempts + 1) as i64));
+
+                     // add firewall blocking here
+                }
+            }
+
+            fake_failure().await;
+            return StatusCode::REQUEST_TIMEOUT;
+        }
+    };
+
+    let mut invalid = 0;
     {
         let mut map = state.failed_ips.write().unwrap();
         let mut used_nonces = state.used_nonces.write().unwrap();
@@ -39,13 +67,15 @@ pub async fn knock_handler(
         .or_default();
 
         if let Some(expiry) = info.blocked_expiry {
-            if Instant::now() < expiry {
+            if Utc::now() < expiry {
                 warn!("Blocked request! IP: {}", client_ip);
                 invalid += 1;
                 // add firewall rule here.
             }
         }
-        if SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs().abs_diff(payload.timestamp) > state.config.max_time_drift.into() {
+
+        //validate timestamp
+        if (Utc::now() - payload.timestamp).num_seconds().unsigned_abs() > state.config.max_time_drift.into() {
             warn!("Invalid timestamp! IP = {}", client_ip);
             invalid += 1;
         }
@@ -54,7 +84,7 @@ pub async fn knock_handler(
             warn!("Reused nonce! IP: {}", client_ip);
             invalid += 1;
         } else {
-            used_nonces.insert(payload.nonce.clone(), Instant::now());
+            used_nonces.insert(payload.nonce.clone(), Utc::now());
         }
 
     }
@@ -76,7 +106,8 @@ pub async fn knock_handler(
             warn!("Attempts from {} = {}", client_ip, info.attempts);
 
             if info.attempts >= state.config.max_failed_attempts {
-                info.blocked_expiry = Some(Instant::now() + Duration::from_secs(state.config.timeout_dur as u64 * (info.attempts - state.config.max_failed_attempts + 1) as u64));
+                info.blocked_expiry = Some(Utc::now() + ChronoDuration::seconds(state.config.timeout_dur as i64 * (info.attempts - state.config.max_failed_attempts + 1) as i64));
+                // add firewall blocking here
             }
         }
 
@@ -90,15 +121,15 @@ pub async fn knock_handler(
     .unwrap()
     .remove(&client_ip);
 
-    let auth_expiry = Instant::now() + Duration::from_secs(state.config.auth_dur.into());
+    let auth_expiry = Utc::now() + ChronoDuration::seconds(state.config.auth_dur as i64);
 
     state
-    .authorized_ips
+    .authorised_ips
     .write()
     .unwrap()
     .insert(client_ip, auth_expiry);
 
-    info!("Authorized {}", client_ip);
+    info!("Authorised {}", client_ip);
 
     fake_failure().await;
 
@@ -113,17 +144,17 @@ pub async fn authorise(
 
     let client_ip = get_client_ip(addr, &headers);
 
-    let authorized = state
-        .authorized_ips
+    let authorised = state
+        .authorised_ips
         .read()
         .unwrap()
         .get(&client_ip)
-        .is_some_and(|expiry| *expiry > Instant::now());
+        .is_some_and(|expiry| *expiry > Utc::now());
 
-    if authorized {
+    if authorised {
         StatusCode::OK
     } else {
-        warn!("Unauthorized request! IP: {}", client_ip);
+        warn!("Unauthorised request! IP: {}", client_ip);
         StatusCode::NOT_FOUND
     }
 }

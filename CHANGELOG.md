@@ -1,5 +1,13 @@
 # Changelog - Open Sesame!
 
+## 18/08/26
+
+- Switched from time::Instant to Utc::now for consistency and ease of maintenance
+- Plugged a security bug when passing wrong header to the knock service
+- Added database integration (needs testing)
+- Better separation of concerns
+
+
 ## 17/07/26
 
 - Use caddy forward auth

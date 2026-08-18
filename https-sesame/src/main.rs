@@ -1,15 +1,17 @@
 mod config;
-mod state;
+// mod state;
 mod models;
 mod auth;
-// mod proxy;
 mod logging;
+mod database;
 
 use axum::{
     routing::{get, post},
     middleware,
     Router,
 };
+
+use chrono::{Utc};
 
 use std::{
     collections::HashMap,
@@ -20,10 +22,10 @@ use std::{
 use tracing::info;
 
 use config::EnvConfig;
-use state::AppState;
+use models::{AppState, FailedIpInfo};
 use auth::{knock_handler, authorise};
-// use proxy::proxy_dashboard;
 use logging::{req_logger};
+use database::Database;
 
 #[tokio::main]
 async fn main() {
@@ -31,15 +33,50 @@ async fn main() {
 
     logging::init();
 
+    let mut authorised_ips = HashMap::new();
+    let mut failed_ips = HashMap::new();
+    let mut used_nonces = HashMap::new();
 
+    let database = if config.persistence {
+        info!("Persistence enabled. Connecting to database...");
+        let db = Database::connect(&config.db_conf)
+            .await
+            .expect("Failed to connect to database");
+
+        db.init()
+            .await
+            .expect("Failed to initialise database");
+
+        let now = Utc::now();
+        for (ip, expires_at) in db.load_authorised_ips().await.expect("Failed to load authorised IPs") {
+            if expires_at > now {
+                authorised_ips.insert(ip, expires_at);
+            }
+        }
+        for (ip, attempts, blocked_expiry) in db.load_failed_ips().await.expect("Failed to load blocked IPs") {
+            if blocked_expiry > Some(now) {
+                failed_ips.insert(ip, FailedIpInfo { attempts, blocked_expiry});
+            }
+        }
+        for (nonce, used_at) in db.load_nonces().await.expect("Failed to load used nonces") {
+            used_nonces.insert(nonce, used_at);
+        }
+
+        info!("Database connected!");
+        Some(Arc::new(db))
+    } else {
+        info!("Persistence disabled");
+        None
+    };
 
     info!("Starting server...");
 
     let state = AppState {
-        authorized_ips: Arc::new(RwLock::new(HashMap::new())),
-        failed_ips: Arc::new(RwLock::new(HashMap::new())),
-        used_nonces: Arc::new(RwLock::new(HashMap::new())),
-        config: config.clone(),
+        database,
+        authorised_ips: Arc::new(RwLock::new(authorised_ips)),
+        failed_ips: Arc::new(RwLock::new(failed_ips)),
+        used_nonces: Arc::new(RwLock::new(used_nonces)),
+        config: config.clone()
     };
 
     let app = Router::new()

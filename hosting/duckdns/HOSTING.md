@@ -14,7 +14,7 @@ But, for DuckDNS, you must modify your caddy binary file to include the DuckDNS 
 For more information, please search up xcaddy and building it with the DuckDNS plugin.
 
 
-Copy-paste given instructions below:
+Copy-paste given instructions below for setting up caddy w/ DuckDNS module:
 ```
 go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 

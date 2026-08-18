@@ -8,6 +8,8 @@ use std::{
     env,
 };
 
+use crate::models::DatabaseConfig;
+
 #[derive(Clone)]
 pub struct EnvConfig {
     pub gateway_host: IpAddr,
@@ -23,6 +25,9 @@ pub struct EnvConfig {
 
     pub max_failed_attempts: u8,
     pub timeout_dur: u16,
+
+    pub persistence: bool,
+    pub db_conf: DatabaseConfig,
 }
 
 impl EnvConfig {
@@ -77,6 +82,25 @@ impl EnvConfig {
             .expect("TIMEOUT_DURATION_SECONDS field missing")
             .parse()
             .expect("Invalid TIMEOUT_DURATION_SECONDS field"),
+
+            persistence: env::var("PERSISTENCE")
+            .expect("PERSISTENCE field missing")
+            .parse()
+            .expect("Invalid PERSISTENCE field"),
+
+            db_conf: DatabaseConfig {
+                url: env::var("URL")
+                .expect("URL field missing")
+                .parse()
+                .expect("Invalid URL field"),
+
+                max_connections: env::var("MAX_CONNECTIONS")
+                .expect("MAX_CONNECTIONS field missing")
+                .parse()
+                .expect("Invalid MAX_CONNECTIONS field"),
+            }
+
+
         }
     }
 }

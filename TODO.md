@@ -14,12 +14,16 @@
 - [X] Output logs to logfile
 - [X] Refactor & cleanup auth.rs code
 
-- [ ] Store & load used IPs, nonces, etc. in plaintext for persistence
-- [ ] Cleanup for IPs and Nonces
+- [ ] Store & load used IPs, nonces, etc. - persistence
+- Store Expose API for Used IPs and their timestamp, action performed for heuristics
 
+- [ ] Cleanup for IPs and Nonces
 - [ ] Add blocked IPs to firewall blacklist
-- [ ] HMAC implementation?
 - [ ] Rate limiting
+
+- [ ] Shift to config.toml for config options
+
+- [ ] HMAC implementation?
 
 ## Dashboard
 - [ ] Impressive dashboard - expand upon later

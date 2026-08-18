@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cave Sesame</title>
+  <!-- Futuristic / Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Canvas for Starfield & Particle UI -->
+  <canvas id="login-canvas"></canvas>
+
+  <!-- Hidden Interactive Form Overlay -->
+  <div id="ui-overlay">
+    <form id="login-form" autocomplete="off" onsubmit="event.preventDefault();">
+      <!-- Username Field Container -->
+      <div class="input-group" id="username-group">
+        <input 
+          type="text" 
+          id="username-input" 
+          name="username" 
+          autocomplete="off" 
+          maxlength="20"
+          spellcheck="false"
+        />
+      </div>
+
+      <!-- Password Field Container -->
+      <div class="input-group" id="password-group">
+        <input 
+          type="password" 
+          id="password-input" 
+          name="password" 
+          autocomplete="new-password" 
+          maxlength="20"
+        />
+      </div>
+    </form>
+  </div>
+
+  <!-- Main Success Dashboard (Project Sesame Dashboard) -->
+  <div id="success-screen" class="hidden">
+    <div class="dashboard-container">
+      <!-- Dashboard Header -->
+      <header class="dashboard-header">
+        <div class="header-logo">
+          <div class="logo-indicator"></div>
+          <span class="logo-main">PROJECT SESAME</span>
+          <span class="logo-sub">// SYSTEM DASHBOARD</span>
+        </div>
+        <div class="header-stats">
+          <div class="stat-group">
+            <span class="stat-label">STATUS</span>
+            <span class="stat-value active">SECURED</span>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">SESSION UPTIME</span>
+            <span id="uptime-counter" class="stat-value mono">00:00:00</span>
+          </div>
+          <div class="stat-group">
+            <span class="stat-label">ORIGIN</span>
+            <span class="stat-value mono">127.0.0.1</span>
+          </div>
+        </div>
+        <button id="logout-btn" class="header-logout">DISCONNECT</button>
+      </header>
+
+      <!-- Dashboard Main Grid -->
+      <div class="dashboard-grid">
+        <!-- Sidebar: System Metrics & Diagnostics -->
+        <aside class="dashboard-sidebar">
+          <!-- Resource Section -->
+          <div class="dashboard-panel panel-metrics">
+            <h3>System Metrics</h3>
+            <div class="metrics-container">
+              <div class="gauge-item">
+                <div class="circle-gauge" id="cpu-gauge">
+                  <svg viewBox="0 0 100 100">
+                    <circle class="bg" cx="50" cy="50" r="40"></circle>
+                    <circle class="fg" cx="50" cy="50" r="40" id="cpu-circle"></circle>
+                  </svg>
+                  <span class="gauge-value" id="cpu-value">—</span>
+                </div>
+                <span class="gauge-label">CPU Load</span>
+              </div>
+              <div class="gauge-item">
+                <div class="circle-gauge" id="ram-gauge">
+                  <svg viewBox="0 0 100 100">
+                    <circle class="bg" cx="50" cy="50" r="40"></circle>
+                    <circle class="fg" cx="50" cy="50" r="40" id="ram-circle"></circle>
+                  </svg>
+                  <span class="gauge-value" id="ram-value">—</span>
+                </div>
+                <span class="gauge-label">RAM Usage</span>
+              </div>
+            </div>
+            <!-- Disk Usage Bar -->
+            <div class="disk-row">
+              <div class="disk-label-row">
+                <span class="disk-label">DISK  /dev/sda1</span>
+                <span class="disk-value" id="disk-value">62%</span>
+              </div>
+              <div class="disk-track">
+                <div class="disk-fill" id="disk-fill" style="width:62%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Services Section -->
+          <div class="dashboard-panel panel-services">
+            <h3>ACTIVE SERVICES</h3>
+            <ul class="services-list">
+              <li class="service-item">
+                <span class="service-indicator online"></span>
+                <span class="service-name">Web Gateway</span>
+                <span class="service-port">8080</span>
+              </li>
+              <li class="service-item">
+                <span class="service-indicator online"></span>
+                <span class="service-name">Aether Particle Engine</span>
+                <span class="service-port">GPU-0</span>
+              </li>
+              <li class="service-item">
+                <span class="service-indicator online"></span>
+                <span class="service-name">TTYD Terminal Daemon</span>
+                <span class="service-port">7681</span>
+              </li>
+              <li class="service-item">
+                <span class="service-indicator online"></span>
+                <span class="service-name">DB Cluster</span>
+                <span class="service-port">27017</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Connection Stats -->
+          <div class="dashboard-panel panel-conn">
+            <h3>Connection Info</h3>
+            <div class="conn-grid">
+              <div class="conn-item">
+                <span class="label">NODE ID</span>
+                <span class="value">NEXUS-01</span>
+              </div>
+              <div class="conn-item">
+                <span class="label">PROTOCOL</span>
+                <span class="value">WSS / AES-256</span>
+              </div>
+              <div class="conn-item">
+                <span class="label">REGION</span>
+                <span class="value">LOCAL CLUSTER</span>
+              </div>
+              <div class="conn-item">
+                <span class="label">LATENCY</span>
+                <span class="value" id="latency-value">&lt;1ms</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main Panel: Live TTYD Terminal -->
+        <main class="dashboard-main">
+          <div class="terminal-window">
+            <div class="terminal-header">
+              <div class="window-controls">
+                <span class="control close"></span>
+                <span class="control minimize"></span>
+                <span class="control maximize"></span>
+              </div>
+              <div class="terminal-title">ttyS001 - user@sesame-nexus:~</div>
+              <div class="terminal-status-glow"></div>
+            </div>
+            <div class="terminal-body">
+              <!-- Live TTYD Instance Iframe -->
+              <iframe id="terminal-iframe" src="http://localhost:7681/" title="ttyd terminal"></iframe>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logic scripts -->
+  <script type="module" src="engine.js"></script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
