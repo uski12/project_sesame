@@ -14,8 +14,9 @@
 - [X] Output logs to logfile
 - [X] Refactor & cleanup auth.rs code
 
-- [ ] Store & load used IPs, nonces, etc. - persistence
-- Store Expose API for Used IPs and their timestamp, action performed for heuristics
+- [ ] Store & load used IPs, nonces, etc. - persistence (90% done, needs testing)
+- Store Expose API for Used IPs and their timestamp, action performed for heuristics (dashboard)?
+- [ ] UDP SPA ()
 
 - [ ] Cleanup for IPs and Nonces
 - [ ] Add blocked IPs to firewall blacklist
@@ -29,7 +30,6 @@
 - [ ] Impressive dashboard - expand upon later
 
 ## Future Ideas
-- [ ] UDP SPA (client and server required)
 - [ ] SYN packet modification
 - [ ] Discord bot integration (notifications)
 - [ ] OTP auth

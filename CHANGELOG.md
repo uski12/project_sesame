@@ -1,5 +1,9 @@
 # Changelog - Open Sesame!
 
+## 21/08/26 
+
+- Preliminary work on adding UDP SPA support
+
 ## 18/08/26
 
 - Switched from time::Instant to Utc::now for consistency and ease of maintenance

@@ -160,7 +160,6 @@ pub async fn authorise(
 }
 
 
-
 pub async fn fake_failure() {
     let delay =
     rand::thread_rng().gen_range(1000..5000);

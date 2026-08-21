@@ -1,5 +1,6 @@
 mod config;
 // mod state;
+mod udp;
 mod models;
 mod auth;
 mod logging;
@@ -26,6 +27,7 @@ use models::{AppState, FailedIpInfo};
 use auth::{knock_handler, authorise};
 use logging::{req_logger};
 use database::Database;
+use udp::start_udp_listener;
 
 #[tokio::main]
 async fn main() {
@@ -36,6 +38,9 @@ async fn main() {
     let mut authorised_ips = HashMap::new();
     let mut failed_ips = HashMap::new();
     let mut used_nonces = HashMap::new();
+
+    let udp = true;
+    let tcp = true;
 
     let database = if config.persistence {
         info!("Persistence enabled. Connecting to database...");
@@ -79,24 +84,36 @@ async fn main() {
         config: config.clone()
     };
 
-    let app = Router::new()
-    .route("/knock", post(knock_handler))
-    .route("/authorise", get(authorise))
-    .layer(middleware::from_fn_with_state(state.clone(), req_logger))
-    .with_state(state);
+    if udp {
+        let sclone = state.clone();
+        tokio::spawn(async move {
+            if let Err(e) = udp::start_udp_listener(sclone).await {
+                tracing::error!("UDP listener failed: {}", e);
+            }
+        });
+    }
+    if tcp {
+        let app = Router::new()
+        .route("/knock", post(knock_handler))
+        .route("/authorise", get(authorise))
+        .layer(middleware::from_fn_with_state(state.clone(), req_logger))
+        .with_state(state);
 
 
-    let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.gateway_host, config.gateway_port))
-    .await
-    .unwrap();
+        let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.gateway_host, config.gateway_port))
+        .await
+        .unwrap();
 
-    info!("Gateway listening on {}:{}", config.gateway_host, config.gateway_port);
 
-    axum::serve(
-        listener,
-        app.into_make_service_with_connect_info::<SocketAddr>(),
-    )
-    .await
-    .unwrap();
+
+        info!("Gateway listening on {}:{}", config.gateway_host, config.gateway_port);
+
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .unwrap();
+    }
 }
 
