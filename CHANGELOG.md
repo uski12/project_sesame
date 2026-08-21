@@ -3,6 +3,7 @@
 ## 21/08/26 
 
 - Preliminary work on adding UDP SPA support
+- Remaining work - add switching to config file, move TCP stuff to tcp.rs, generalise knock_auth for both TCP & UDP database testing & metrics
 
 ## 18/08/26
 
