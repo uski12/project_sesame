@@ -14,16 +14,16 @@ use tracing::{info, debug};
 use tracing_appender::rolling;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
-pub fn get_client_ip(peer: SocketAddr, headers: &HeaderMap) -> IpAddr {
+pub fn get_client_ip(peer: SocketAddr, headers: Option<&HeaderMap>) -> IpAddr {
     if peer.ip().is_loopback() {
         if let Some(ip) = headers
-            .get("x-forwarded-for")
+            .and_then(|headers| headers.get("x-forwarded-for"))
             .and_then(|v| v.to_str().ok())
             .and_then(|v| v.split(",").next())
             .and_then(|s| s.trim().parse::<IpAddr>().ok())
-            {
-                return ip;
-            }
+        {
+            return ip;
+        }
     }
     peer.ip()
 }
@@ -46,7 +46,7 @@ pub async fn req_logger(
 ) -> Response {
 
     info!(
-        ip = %get_client_ip(addr, &headers),
+        ip = %get_client_ip(addr, Some(&headers)),
         method = %request.method(),
         uri = %request.uri(),
         "Request received: "

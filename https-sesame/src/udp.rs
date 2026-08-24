@@ -2,23 +2,39 @@ use tokio::net::UdpSocket;
 
 use tracing::{info, warn};
 
-use crate::models::AppState;
+use crate::models::{ AppState, KnockRequest };
+use crate::auth::knock_auth;
+use crate::logging::get_client_ip;
+
 
 pub async fn start_udp_listener(
-    _state: AppState,
+    state: AppState,
 ) -> std::io::Result<()> {
-    info!("Starting UDP listener...");
 
+    info!("Starting UDP listener...");
     let socket = UdpSocket::bind("0.0.0.0:8009").await?;
 
     info!("UDP socket successfully bound on {}", socket.local_addr()?);
-
     let mut buffer = [0u8; 4096];
 
     loop {
-
         let (len, addr) = socket.recv_from(&mut buffer).await?;
 
-        info!("UDP packet received from: {}, length: {}, text: {}", addr, len, String::from_utf8_lossy(&buffer[..len]));
+        let packet = &buffer[..len];
+
+        let client_ip = get_client_ip(addr, None);
+
+        let payload: Option<KnockRequest> =
+        match serde_json::from_slice(packet) {
+            Ok(payload) => {
+                info!("UDP packet received from {}", addr);
+                Some(payload)
+            }
+            Err(_) => {
+                None
+            }
+        };
+
+        let _ = knock_auth(&state, client_ip, payload).await;
     }
 }
