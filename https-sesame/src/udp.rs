@@ -23,14 +23,15 @@ pub async fn start_udp_listener(
         let packet = &buffer[..len];
 
         let client_ip = get_client_ip(addr, None);
+        info!("UDP packet received from {}", addr);
 
         let payload: Option<KnockRequest> =
         match serde_json::from_slice(packet) {
             Ok(payload) => {
-                info!("UDP packet received from {}", addr);
                 Some(payload)
             }
-            Err(_) => {
+            Err(e) => {
+                warn!("Invalid UDP payload from {}: {}", client_ip, e);
                 None
             }
         };

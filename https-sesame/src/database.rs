@@ -27,13 +27,23 @@ impl Database {
                 ip TEXT PRIMARY KEY,
                 expires_at TIMESTAMPTZ NOT NULL
             );
-
+            "#,
+        )
+        .execute(&self.pool)
+        .await?;
+        sqlx::query(
+            r#"
             CREATE TABLE IF NOT EXISTS failed_ips (
                 ip TEXT PRIMARY KEY,
                 attempts INTEGER NOT NULL,
                 blocked_until TIMESTAMPTZ
             );
-
+            "#,
+        )
+        .execute(&self.pool)
+        .await?;
+        sqlx::query(
+            r#"
             CREATE TABLE IF NOT EXISTS used_nonces (
                 nonce TEXT PRIMARY KEY,
                 used_at TIMESTAMPTZ NOT NULL
@@ -46,7 +56,7 @@ impl Database {
         Ok(())
     }
 
-    pub async fn save_authorised_ips(
+    pub async fn save_authorised_ip(
         &self,
         ip: IpAddr,
         expires_at: DateTime<Utc>,
@@ -160,7 +170,7 @@ impl Database {
 
         Ok(())
     }
-    // pub async fn nonce_exists(&) {} NOT IMPLEMENTING THIS AS NONCES ARE ALWAYS CHECKED IN-MEMORY.
+    // pub async fn nonce_exists(&) {} NOT IMPLEMENTING - NONCES ALWAYS CHECKED IN-MEMORY.
 
     pub async fn load_nonces(&self) -> Result<Vec<(String, DateTime<Utc>)>, sqlx::Error> {
         sqlx::query_as::<_, (String, DateTime<Utc>)>("SELECT nonce, used_at FROM used_nonces")

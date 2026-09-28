@@ -27,7 +27,7 @@ use models::{AppState, FailedIpInfo};
 use auth::{knock_handler, authorise};
 use logging::{req_logger};
 use database::Database;
-use udp::start_udp_listener;
+// use udp::start_udp_listener;
 
 #[tokio::main]
 async fn main() {
@@ -99,12 +99,9 @@ async fn main() {
         .layer(middleware::from_fn_with_state(state.clone(), req_logger))
         .with_state(state);
 
-
         let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.gateway_host, config.gateway_port))
         .await
         .unwrap();
-
-
 
         info!("Gateway listening on {}:{}", config.gateway_host, config.gateway_port);
 

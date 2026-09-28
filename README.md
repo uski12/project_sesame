@@ -44,10 +44,25 @@ uvicorn main:app --host 127.0.0.1 --port 3000
 `TEMPORARY`
 
 In bash, to knock
-```
+```tcp
 curl -X POST http://localhost:8080/knock -H "Content-Type: application/json" -d "{\"passphrase\":\"test123\",\"nonce\":\"$(uuidgen)\",\"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
 ```
-With caddy reverse proxying and DuckDNS,
+```udp
+nonce=$(openssl rand -hex 8)
+pswd="YOUR_KEY_HERE"
+ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+payload=$(printf '{"passphrase":"%s", "timestamp":""%s"", "nonce":"%s"}' "$pswd" "$ts" "$nonce")
+
+HOST="hostname/ipaddress"
+PORT="8009"
+
+exec 3<>/dev/udp/$HOST/$PORT
+printf '%s' "$payload" >&3
+exec 3<&-
+```
+
+With caddy reverse proxying and DuckDNS, use this for HTTPS or the same as above for HTTP
 ```
 curl -X POST https://domain.duckdns.org/knock -H 'Content-Type: application/json' -d "{\"passphrase\":\"test123\", \"nonce\": \"$(uuidgen)\", \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
 ```

@@ -16,7 +16,7 @@
 
 - [ ] Store & load used IPs, nonces, etc. - persistence (90% done, needs testing)
 - Store Expose API for Used IPs and their timestamp, action performed for heuristics (dashboard)?
-- [ ] UDP SPA
+- [X] UDP SPA
 
 - [ ] Cleanup for IPs and Nonces
 - [ ] Add blocked IPs to firewall blacklist

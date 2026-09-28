@@ -46,24 +46,34 @@ pub async fn knock_handler(
 }
 
 
-fn update_failed_attempts(state: &AppState, client_ip: IpAddr) -> u8 {
-    let mut map = state.failed_ips.write().unwrap();
+async fn update_failed_attempts(state: &AppState, client_ip: IpAddr) -> u8 {
 
-    let info = map
-    .entry(client_ip)
-    .or_default();
+    let (attempts, blocked_expiry) = {
+        let mut map = state.failed_ips.write().unwrap();
 
-    info.attempts += 1;
+        let info = map
+        .entry(client_ip)
+        .or_default();
 
-    if info.attempts >= state.config.max_failed_attempts {
-        info.blocked_expiry = Some(Utc::now() + ChronoDuration::seconds(state.config.timeout_dur as i64 * (info.attempts - state.config.max_failed_attempts + 1) as i64));
-        // add firewall blocking here
+        info.attempts += 1;
+
+        if info.attempts >= state.config.max_failed_attempts {
+            info.blocked_expiry = Some(Utc::now() + ChronoDuration::seconds(state.config.timeout_dur as i64 * (info.attempts - state.config.max_failed_attempts + 1) as i64));
+            // add firewall blocking here
+        }
+        (info.attempts, info.blocked_expiry)
+    };
+
+    if let Some(db) = &state.database {
+        if let Err(e) = db.save_failed_ip(client_ip, attempts, blocked_expiry).await {
+            warn!("Failed to persist failed attempt for {client_ip}: {e}");
+        }
     }
 
-    return info.attempts;
+    return attempts;
 }
 
-// function that simply takes in payload and cleint_ip, validates it.
+// function that simply takes in payload and client_ip, validates it.
 pub async fn knock_auth(
     state: &AppState,
     client_ip: IpAddr,
@@ -77,27 +87,37 @@ pub async fn knock_auth(
             return Err(());
         }
     }
-
-
     // check payload structure
     let payload = match payload {
         Some(payload) => payload,
         None => {
-            warn!("Invalid knock payload! IP: {}, attempts: {}", client_ip, update_failed_attempts(&state, client_ip));
+            warn!("Invalid knock payload! IP: {}, attempts: {}", client_ip, update_failed_attempts(&state, client_ip).await);
             return Err(());
         }
     };
 
     let mut invalid = false;
 
-    // check nonce
+    // check
+    let nonce_used_at =
     {
         let mut used_nonces = state.used_nonces.write().unwrap();
         if used_nonces.contains_key(&payload.nonce) {
             warn!("Reused nonce! IP: {}", client_ip);
             invalid = true;
+            None
         } else {
-            used_nonces.insert(payload.nonce.clone(), Utc::now());
+            let now = Utc::now();
+            used_nonces.insert(payload.nonce.clone(), now);
+            Some(now)
+        }
+    };
+
+    if let Some(now) = nonce_used_at {
+        if let Some(db) = &state.database {
+            if let Err(e) = db.save_nonce(&payload.nonce, now).await {
+                warn!("Failed to persist nonce: {e}");
+            }
         }
     }
 
@@ -106,7 +126,6 @@ pub async fn knock_auth(
         warn!("Invalid timestamp! IP = {}", client_ip);
         invalid = true;
     }
-
     // validate passphrase
     if payload.passphrase != state.config.passphrase {
         warn!("Wrong password! IP: {}", client_ip);
@@ -114,11 +133,10 @@ pub async fn knock_auth(
     }
 
     if invalid {
-        let attempts = update_failed_attempts(&state, client_ip);
+        let attempts = update_failed_attempts(&state, client_ip).await;
         warn!("Attempts from {} = {}", client_ip, attempts);
         return Err(());
     }
-
 
     state
     .failed_ips.write()
@@ -132,6 +150,15 @@ pub async fn knock_auth(
     .write()
     .unwrap()
     .insert(client_ip, auth_expiry);
+
+    if let Some(db) = &state.database {
+        if let Err(e) = db.remove_failed_ip(client_ip).await {
+            warn!("Failed to remove failed attempt for {client_ip} from database: {e}");
+        }
+        if let Err(e) = db.save_authorised_ip(client_ip, auth_expiry).await {
+            warn!("Failed to save authorised state for {client_ip} in database: {e}");
+        }
+    }
 
     info!("Authorised {}", client_ip);
     Ok(())

@@ -1,5 +1,10 @@
 # Changelog - Open Sesame!
 
+## 28/09/26
+
+- Database persistence done
+- Remaining work: encrypted UDP support, allow switching in config file
+
 ## 24/08/26
 
 - UDP unencrypted basic support added
